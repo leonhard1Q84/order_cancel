@@ -1,3 +1,4 @@
+
 export enum OrderStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
@@ -16,7 +17,7 @@ export interface Store {
 export interface Order {
   id: string;
   platformOrderNo: string;
-  externalOrderNo?: string;
+  // externalOrderNo removed as it is redundant with platformOrderNo
   status: OrderStatus;
   
   // Dates (ISO Strings)
@@ -24,6 +25,10 @@ export interface Order {
   updateTime: string; // Used for default sorting
   cancelTime?: string; // Specific for Canceled tab sorting
   
+  // Confirmation Info
+  confirmTime?: string;
+  confirmType?: 'INSTANT' | 'SECONDARY'; // '即时确认' | '二次确认'
+
   // Pickup Info
   pickupTime: string;
   pickupStore: Store;
@@ -34,8 +39,9 @@ export interface Order {
   
   // Vehicle
   carModel: string;
-  carGroup: string;
+  // carGroup removed in favor of merging into carModel string or UI logic
   actualCar?: string;
+  actualCarCurrentStore?: Store; // The store where the actual vehicle belongs (for cross-store detection)
   
   // Customer
   customerName: string;
