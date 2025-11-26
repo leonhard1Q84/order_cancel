@@ -58,6 +58,7 @@ export interface Order {
 
 export type TabType = 
   | 'all' 
+  | 'pending' // New Pending Tab
   | 'new_24h' 
   | 'pickup_next_24h' 
   | 'return_today' 

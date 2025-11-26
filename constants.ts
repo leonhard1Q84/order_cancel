@@ -35,6 +35,25 @@ export const MOCK_ORDERS: Order[] = [
     source: 'klook'
   },
   {
+    id: '6',
+    platformOrderNo: 'R746001122334455',
+    status: OrderStatus.PENDING, // New Pending Order
+    updateTime: getRelativeTime(-0.2), // Very recent
+    createTime: getRelativeTime(-0.2),
+    // No confirmTime yet
+    pickupTime: getRelativeTime(48),
+    pickupStore: NAHA_STORE,
+    returnTime: getRelativeTime(48 + 72),
+    returnStore: NAHA_STORE,
+    carModel: 'W1.FDAR.Toyota Alphard',
+    customerName: 'Pending User',
+    amount: 300.0,
+    currency: 'USD',
+    paymentStatus: 'Prepaid',
+    source: 'trip.com',
+    remarks: 'Needs baby seat'
+  },
+  {
     id: '2',
     platformOrderNo: 'R744154708988677',
     status: OrderStatus.CANCELED,

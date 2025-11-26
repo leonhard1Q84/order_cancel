@@ -20,6 +20,7 @@ import { formatStoreTime, isNext24Hours } from '../utils';
 // --- Tab Definitions ---
 const TAB_DEFS: { id: TabType; label: string }[] = [
   { id: 'all', label: '全部' },
+  { id: 'pending', label: '待确认' }, // New Pending Tab
   { id: 'new_24h', label: '近24小时新增预订' },
   { id: 'pickup_next_24h', label: '未来24小时待取车' },
   { id: 'return_today', label: '今日待还订单' },
@@ -85,6 +86,8 @@ const OrderList: React.FC = () => {
     switch (type) {
       case 'all':
         return true;
+      case 'pending':
+        return order.status === OrderStatus.PENDING;
       case 'new_24h':
         // Created within the last 24 hours
         return (now - new Date(order.createTime).getTime()) < oneDay;
@@ -310,9 +313,15 @@ const OrderList: React.FC = () => {
 };
 
 const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
-  const statusColorClass = order.status === OrderStatus.CANCELED 
-    ? 'text-orange-500 font-medium' 
-    : 'text-gray-700';
+  // Enhanced color logic for statuses
+  const statusColorClass = useMemo(() => {
+    switch (order.status) {
+      case OrderStatus.CANCELED: return 'text-orange-500 font-medium';
+      case OrderStatus.PENDING: return 'text-red-600 font-bold'; // Highlight Pending
+      case OrderStatus.CONFIRMED: return 'text-green-600 font-medium';
+      default: return 'text-gray-700';
+    }
+  }, [order.status]);
 
   const statusLabel = {
     [OrderStatus.PENDING]: '待确认',
@@ -355,7 +364,10 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
       <td className="p-4 align-top bg-white group-hover:bg-blue-50/30">
          <div className="mb-2">
             <div className="text-xs text-gray-500">确认号:</div>
-            <div className="text-gray-900 font-medium">{order.id.padStart(8, '0')}</div>
+            {order.id ? (
+               <div className="text-gray-900 font-medium">{order.id.padStart(8, '0')}</div>
+            ) : '--'}
+            
             {order.confirmType && (
               <span className={`inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded border ${
                 order.confirmType === 'INSTANT' 
@@ -371,9 +383,7 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
                  确认: {formatStoreTime(order.confirmTime, order.pickupStore.timeZone)}
              </div>
          ) : order.status === OrderStatus.PENDING && (
-            <button className="text-[10px] text-blue-500 border border-blue-200 px-2 py-0.5 rounded mt-1 hover:bg-blue-50 transition-colors">
-              立即确认
-            </button>
+           <div className="text-xs text-red-500 italic mt-1">待处理</div>
          )}
       </td>
 
@@ -455,6 +465,19 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
       <td className="p-4 align-top text-right sticky right-0 z-30 bg-white group-hover:bg-blue-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] border-l border-gray-100">
         <div className="flex flex-col gap-1.5 items-end">
           <button className="text-blue-500 hover:text-blue-700 text-xs font-medium">查看</button>
+          
+          {/* Pending Actions */}
+          {order.status === OrderStatus.PENDING && (
+            <>
+              <button className="text-green-600 hover:text-green-700 text-xs font-medium border border-green-200 px-2 py-0.5 rounded bg-green-50 hover:bg-green-100">
+                立即确认
+              </button>
+              <button className="text-red-500 hover:text-red-700 text-xs border border-red-200 px-2 py-0.5 rounded bg-red-50 hover:bg-red-100">
+                拒单
+              </button>
+            </>
+          )}
+
           {order.status === OrderStatus.CONFIRMED && (
             <>
                 <button className="text-green-600 hover:text-green-700 text-xs">分配车辆</button>
