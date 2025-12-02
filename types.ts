@@ -20,6 +20,9 @@ export interface Order {
   // externalOrderNo removed as it is redundant with platformOrderNo
   status: OrderStatus;
   
+  // New Tag
+  isRushOrder?: boolean; // "急单" tag
+
   // Dates (ISO Strings)
   createTime: string; // Displayed in the first column
   updateTime: string; // Used for default sorting
@@ -45,10 +48,13 @@ export interface Order {
   
   // Customer
   customerName: string;
+  flightNumber?: string; // Added Flight Number
   contact?: string;
   
   // Financials
   amount: number;
+  prepaidAmount?: number; // Added Prepaid
+  payAtPickupAmount?: number; // Added Pay at Counter
   currency: string;
   paymentStatus: string; // e.g., 'Paid', 'Pay on Arrival'
   
@@ -58,10 +64,10 @@ export interface Order {
 
 export type TabType = 
   | 'all' 
-  | 'pending' // New Pending Tab
+  | 'pending' 
   | 'new_24h' 
-  | 'pickup_next_24h' 
-  | 'return_today' 
+  | 'pickup_next_48h' // Changed from 24h
+  | 'return_next_48h' // Changed from return_today
   | 'overdue_pickup' 
   | 'overdue_return' 
   | 'canceled';

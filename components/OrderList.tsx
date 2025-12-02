@@ -11,19 +11,20 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Info
+  Info,
+  Flame // For Rush Order
 } from 'lucide-react';
 import { MOCK_ORDERS } from '../constants';
 import { TabType, OrderStatus, Order } from '../types';
-import { formatStoreTime, isNext24Hours } from '../utils';
+import { formatStoreTime, isWithinNextHours } from '../utils';
 
 // --- Tab Definitions ---
 const TAB_DEFS: { id: TabType; label: string }[] = [
   { id: 'all', label: '全部' },
-  { id: 'pending', label: '待确认' }, // New Pending Tab
+  { id: 'pending', label: '待确认' },
   { id: 'new_24h', label: '近24小时新增预订' },
-  { id: 'pickup_next_24h', label: '未来24小时待取车' },
-  { id: 'return_today', label: '今日待还订单' },
+  { id: 'pickup_next_48h', label: '未来48小时待取' }, // Updated Label
+  { id: 'return_next_48h', label: '近48小时待还' }, // Updated Label
   { id: 'overdue_pickup', label: '逾期待取订单' },
   { id: 'overdue_return', label: '逾期待还订单' },
   { id: 'canceled', label: '已取消' },
@@ -89,19 +90,19 @@ const OrderList: React.FC = () => {
       case 'pending':
         return order.status === OrderStatus.PENDING;
       case 'new_24h':
-        // Created within the last 24 hours
+        // Created within the last 24 hours (Past)
         return (now - new Date(order.createTime).getTime()) < oneDay;
-      case 'pickup_next_24h':
-        // Not canceled, pickup time is within the next 24 hours
+      case 'pickup_next_48h':
+        // Not canceled, pickup time is within the next 48 hours (Future)
         return (
           order.status !== OrderStatus.CANCELED && 
-          isNext24Hours(order.pickupTime)
+          isWithinNextHours(order.pickupTime, 48)
         );
-      case 'return_today':
-        // Status is PICKED_UP and return time is within the next 24 hours
+      case 'return_next_48h':
+        // Status is PICKED_UP and return time is within the next 48 hours (Future)
         return (
           order.status === OrderStatus.PICKED_UP && 
-          isNext24Hours(order.returnTime)
+          isWithinNextHours(order.returnTime, 48)
         );
       case 'overdue_pickup':
         // Status is Pending or Confirmed, and pickup time has passed
@@ -269,10 +270,11 @@ const OrderList: React.FC = () => {
               <SortHeader label="取车信息" sortKey="pickupTime" className="bg-gray-50" />
               <SortHeader label="还车信息" sortKey="returnTime" className="bg-gray-50" />
               
-              <th className="p-4 font-medium whitespace-nowrap bg-gray-50">租车用户</th>
+              {/* Customer */}
+              <th className="p-4 font-medium whitespace-nowrap bg-gray-50">客户</th>
               <th className="p-4 font-medium whitespace-nowrap bg-gray-50">订单金额</th>
-              <th className="p-4 font-medium whitespace-nowrap bg-gray-50">订单备注</th>
               
+              {/* Update Time */}
               <SortHeader label="更新时间" sortKey="updateTime" className="bg-gray-50" />
               
               <th className="p-4 font-medium whitespace-nowrap bg-gray-50">订单状态</th>
@@ -345,12 +347,18 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
         <input type="checkbox" />
       </td>
       
-      {/* Sticky Order No */}
+      {/* Sticky Order No + Urgent Tag */}
       <td className="p-4 align-top sticky left-12 z-30 bg-white group-hover:bg-blue-50 border-r border-gray-100 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
-        <div className="flex mb-1.5">
+        <div className="flex mb-1.5 items-center gap-1.5">
            <span className="text-[10px] px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-600 font-medium tracking-wide">
              {order.source}
            </span>
+           {/* Rush Order Tag */}
+           {order.isRushOrder && (
+             <span className="text-[10px] px-1.5 py-0.5 rounded border border-red-200 bg-red-50 text-red-600 font-bold flex items-center gap-0.5">
+                <Flame size={10} className="fill-red-600" /> 急单
+             </span>
+           )}
         </div>
         <div className="text-gray-500 text-xs">平台订单号:</div>
         <div className="text-blue-600 mb-2 font-medium">{order.platformOrderNo}</div>
@@ -423,30 +431,36 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
         <div className="font-medium whitespace-nowrap">{formatStoreTime(order.returnTime, order.returnStore.timeZone)}</div>
       </td>
 
-      {/* Customer */}
+      {/* Customer with Flight */}
       <td className="p-4 align-top bg-white group-hover:bg-blue-50/30">
-        <div className="text-xs text-gray-500">姓名:</div>
-        <div className="font-medium">{order.customerName}</div>
+        <div className="font-medium mb-1">{order.customerName}</div>
+        {order.flightNumber && (
+            <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-1 py-0.5 rounded w-fit">
+                <span>✈ {order.flightNumber}</span>
+            </div>
+        )}
       </td>
 
-      {/* Amount */}
+      {/* Amount with Breakdown */}
       <td className="p-4 align-top bg-white group-hover:bg-blue-50/30">
-        <div className="text-xs text-gray-500">订单金额:</div>
-        <div className="font-medium text-gray-900 whitespace-nowrap">{order.amount} {order.currency}</div>
-        <div className={`text-xs mt-1 ${order.paymentStatus === 'Refunded' ? 'text-red-400' : 'text-green-600'}`}>
-            {order.paymentStatus}
+        <div className="text-xs text-gray-500">总金额:</div>
+        <div className="font-bold text-gray-900 whitespace-nowrap">{order.amount} {order.currency}</div>
+        
+        <div className="mt-1 space-y-0.5 text-[10px]">
+            <div className="flex justify-between gap-2 text-gray-500">
+                <span>预付:</span>
+                <span>{order.prepaidAmount || 0}</span>
+            </div>
+            <div className="flex justify-between gap-2 text-red-500 font-medium">
+                <span>到付:</span>
+                <span>{order.payAtPickupAmount || 0}</span>
+            </div>
         </div>
       </td>
 
-      {/* Remarks */}
-      <td className="p-4 align-top text-gray-500 text-xs max-w-[150px] truncate bg-white group-hover:bg-blue-50/30">
-        {order.remarks || '--'}
-      </td>
-
-      {/* Update Time */}
+      {/* Update Time (Simplified) */}
       <td className="p-4 align-top bg-white group-hover:bg-blue-50/30">
-        <div className="text-xs text-gray-500">更新时间:</div>
-        <div className="whitespace-nowrap">{formatStoreTime(order.updateTime, order.pickupStore.timeZone)}</div>
+        <div className="whitespace-nowrap text-gray-600">{formatStoreTime(order.updateTime, order.pickupStore.timeZone)}</div>
       </td>
 
       {/* Status */}
@@ -454,11 +468,6 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
         <div className={`text-sm ${statusColorClass} whitespace-nowrap`}>
             {statusLabel}
         </div>
-        {order.status === OrderStatus.CANCELED && order.cancelTime && (
-            <div className="text-[10px] text-gray-400 mt-1 whitespace-nowrap">
-                取消: {formatStoreTime(order.cancelTime, order.pickupStore.timeZone)}
-            </div>
-        )}
       </td>
 
       {/* Sticky Actions */}
@@ -495,8 +504,8 @@ const OrderRow: React.FC<{ order: Order }> = ({ order }) => {
 };
 
 // --- Sub-components for Filter Bar ---
-const FilterInput: React.FC<{ label: string; placeholder?: string }> = ({ label, placeholder }) => (
-  <div className="flex flex-col gap-1">
+const FilterInput: React.FC<{ label: string; placeholder?: string; className?: string }> = ({ label, placeholder, className }) => (
+  <div className={`flex flex-col gap-1 ${className}`}>
      <span className="text-xs text-gray-500 font-medium">{label}</span>
      <input type="text" placeholder={placeholder || "请输入"} className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-blue-500 focus:border-blue-500 transition-colors" />
   </div>
@@ -521,7 +530,6 @@ const DateRangeInput: React.FC<{ label: string }> = ({ label }) => {
 
   const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    // If transitioning from empty to having a date, default time to 00:00
     if (!startVal && val && val.indexOf('T') !== -1) {
       const [datePart] = val.split('T');
       setStartVal(`${datePart}T00:00`);
@@ -532,7 +540,6 @@ const DateRangeInput: React.FC<{ label: string }> = ({ label }) => {
 
   const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    // If transitioning from empty to having a date, default time to 23:59
     if (!endVal && val && val.indexOf('T') !== -1) {
       const [datePart] = val.split('T');
       setEndVal(`${datePart}T23:59`);
@@ -546,7 +553,6 @@ const DateRangeInput: React.FC<{ label: string }> = ({ label }) => {
       <span className="text-xs text-gray-500 font-medium">{label}</span>
       <div className="flex items-center gap-2 w-full">
         <div className="relative w-full">
-          {/* type="datetime-local" provides the hour/minute picker */}
           <input 
             type="datetime-local" 
             value={startVal}
@@ -568,7 +574,7 @@ const DateRangeInput: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// --- Filter Bar (Responsive Grid to match screenshot density) ---
+// --- Filter Bar (Refactored) ---
 const FilterBar: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
 
@@ -576,46 +582,80 @@ const FilterBar: React.FC = () => {
     <div className="p-4 border-b border-gray-100 bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         
-        {/* --- Row 1 --- */}
-        <FilterInput label="订单号/确认号:" />
+        {/* --- Row 1: Core Search (5 cols total) --- */}
+        {/* Order ID: 1 col */}
+        <FilterInput label="订单号/确认号" placeholder="请输入..." />
+        
+        {/* General Search: 2 cols */}
+        <FilterInput 
+          label="综合搜索" 
+          placeholder="客户邮箱/客户姓名/电话/订单备注..." 
+          className="col-span-1 md:col-span-2"
+        />
+        
+        {/* Create Date: 2 cols */}
         <DateRangeInput label="下单日期:" />
-        <DateRangeInput label="取车日期:" />
-        <FilterSelect label="取车门店:" options={['IX樱花租车-那霸空港店', 'IX樱花租车-福冈店']} />
-
-        {/* --- Row 2 (Visible when expanded) --- */}
+        
+        {/* --- Expanded Rows --- */}
         {expanded && (
           <>
-            <FilterSelect label="还车门店:" options={['IX樱花租车-那霸空港店', 'IX樱花租车-福冈店']} />
+            {/* --- Row 2: Time & Pickup (5 cols) --- */}
+            <DateRangeInput label="取车日期:" />
             <DateRangeInput label="还车日期:" />
+            <FilterSelect label="取车门店:" options={['IX樱花租车-那霸空港店', 'IX樱花租车-福冈店']} />
+
+            {/* --- Row 3: Return & Status (5 cols) --- */}
+            <FilterSelect label="还车门店:" options={['IX樱花租车-那霸空港店', 'IX樱花租车-福冈店']} />
+            <DateRangeInput label="订单取消时间:" />
             <FilterSelect label="订单来源:" options={['klook', 'trip.com', 'economybooking', 'website']} />
             <FilterSelect label="订单状态:" options={['待确认', '已确认', '已取车', '已还车', '已完成', '已取消']} />
             
-            <FilterSelect label="订单确认方式:" options={['即时确认', '二次确认']} />
-            <FilterInput label="客户姓名:" />
-            <FilterInput label="客户邮箱:" />
-            <FilterInput label="客户电话:" />
+            {/* --- Row 4: Attributes (5 cols) --- */}
             <FilterSelect label="车型组:" options={['Note4', 'CSFT2', 'W1', 'CSAQ5']} />
+            <FilterSelect label="订单确认方式:" options={['即时确认', '二次确认']} />
             
-            <DateRangeInput label="订单取消时间:" />
-            <FilterInput label="订单备注:" />
+            {/* Spacer cols to push actions to the end if needed, or actions take remaining space */}
+            <div className="hidden xl:block col-span-2"></div>
+            
+            {/* Actions: 1 col (or float right) */}
+            <div className="flex items-end gap-2 justify-end w-full">
+                <button className="flex items-center gap-1 border border-gray-300 rounded px-4 py-1.5 text-sm hover:bg-gray-50 bg-white text-gray-700 shadow-sm transition-colors">
+                   <Search size={14} /> 搜索
+                </button>
+                <button className="flex items-center gap-1 border border-gray-300 rounded px-4 py-1.5 text-sm hover:bg-gray-50 bg-white text-gray-700 shadow-sm transition-colors">
+                   <RotateCcw size={14} /> 重置
+                </button>
+            </div>
           </>
         )}
 
-        {/* --- Action Buttons (Floated to right of grid) --- */}
-        <div className="flex items-end gap-2 justify-end md:col-start-2 lg:col-start-4 xl:col-start-5 ml-auto w-full">
-            <button 
-              onClick={() => setExpanded(!expanded)} 
-              className="text-blue-500 text-xs hover:underline mb-2.5 mr-2"
-            >
-              {expanded ? '收起筛选' : '展开筛选'}
-            </button>
-            <button className="flex items-center gap-1 border border-gray-300 rounded px-4 py-1.5 text-sm hover:bg-gray-50 bg-white text-gray-700 shadow-sm transition-colors">
-               <Search size={14} /> 搜索
-            </button>
-            <button className="flex items-center gap-1 border border-gray-300 rounded px-4 py-1.5 text-sm hover:bg-gray-50 bg-white text-gray-700 shadow-sm transition-colors">
-               <RotateCcw size={14} /> 重置
-            </button>
-        </div>
+        {/* --- Toggle Button (Absolute or Flex) --- */}
+        {/* If collapsed, show actions in row 1? 
+            For now, let's keep the expand/collapse logic simple. 
+            If collapsed, only Row 1 is visible. We need a way to expand.
+            Let's put the expand button at the end of Row 1 if collapsed, or floated.
+        */}
+        {!expanded && (
+           <div className="flex items-end justify-end col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-5 border-t border-dashed border-gray-100 pt-2 mt-2">
+              <button 
+                  onClick={() => setExpanded(true)} 
+                  className="text-blue-500 text-xs hover:underline flex items-center gap-1"
+                >
+                  展开筛选 <ChevronDown size={12} />
+              </button>
+           </div>
+        )}
+        
+        {expanded && (
+           <div className="flex items-center justify-center col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-5 border-t border-dashed border-gray-100 pt-2">
+               <button 
+                  onClick={() => setExpanded(false)} 
+                  className="text-gray-400 text-xs hover:text-gray-600 hover:underline flex items-center gap-1"
+                >
+                  收起筛选 <ChevronDown size={12} className="rotate-180" />
+               </button>
+           </div>
+        )}
 
       </div>
     </div>

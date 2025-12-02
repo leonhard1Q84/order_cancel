@@ -1,3 +1,4 @@
+
 // Formats a date string into the Store's Local Time
 export const formatStoreTime = (dateStr: string | undefined, timeZone: string) => {
   if (!dateStr) return '--';
@@ -20,11 +21,11 @@ export const formatStoreTime = (dateStr: string | undefined, timeZone: string) =
   }
 };
 
-// Check if a date is within the next 24 hours from now
-export const isNext24Hours = (dateStr: string) => {
+// Check if a date is within the next N hours from now
+export const isWithinNextHours = (dateStr: string, hours: number) => {
   const now = new Date();
   const target = new Date(dateStr);
   const diff = target.getTime() - now.getTime();
-  const hours24 = 24 * 60 * 60 * 1000;
-  return diff >= 0 && diff <= hours24;
+  const limit = hours * 60 * 60 * 1000;
+  return diff >= 0 && diff <= limit;
 };

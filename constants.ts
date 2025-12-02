@@ -17,6 +17,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '1',
     platformOrderNo: 'R745009384698629',
     status: OrderStatus.CONFIRMED,
+    isRushOrder: false,
     updateTime: getRelativeTime(-2), // Updated 2 hours ago
     createTime: getRelativeTime(-48),
     confirmTime: getRelativeTime(-47.5),
@@ -29,7 +30,10 @@ export const MOCK_ORDERS: Order[] = [
     actualCar: 'AQUA-8821',
     actualCarCurrentStore: NAHA_STORE, // Same store, no highlight
     customerName: 'kwon ginam',
+    flightNumber: 'OZ123',
     amount: 39.2,
+    prepaidAmount: 39.2,
+    payAtPickupAmount: 0,
     currency: 'USD',
     paymentStatus: 'Prepaid',
     source: 'klook'
@@ -38,6 +42,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '6',
     platformOrderNo: 'R746001122334455',
     status: OrderStatus.PENDING, // New Pending Order
+    isRushOrder: true, // Rush Order
     updateTime: getRelativeTime(-0.2), // Very recent
     createTime: getRelativeTime(-0.2),
     // No confirmTime yet
@@ -47,7 +52,10 @@ export const MOCK_ORDERS: Order[] = [
     returnStore: NAHA_STORE,
     carModel: 'W1.FDAR.Toyota Alphard',
     customerName: 'Pending User',
+    flightNumber: 'NH456',
     amount: 300.0,
+    prepaidAmount: 300.0,
+    payAtPickupAmount: 0,
     currency: 'USD',
     paymentStatus: 'Prepaid',
     source: 'trip.com',
@@ -57,6 +65,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '2',
     platformOrderNo: 'R744154708988677',
     status: OrderStatus.CANCELED,
+    isRushOrder: false,
     updateTime: getRelativeTime(-1), // Updated/Canceled 1 hour ago
     cancelTime: getRelativeTime(-1), // Canceled time
     createTime: getRelativeTime(-24),
@@ -68,7 +77,10 @@ export const MOCK_ORDERS: Order[] = [
     returnStore: FUKUOKA_STORE,
     carModel: 'CSFT2.MCAV.Honda N-BOX',
     customerName: 'lun yuen ting',
+    flightNumber: 'CX789',
     amount: 38.0,
+    prepaidAmount: 38.0,
+    payAtPickupAmount: 0,
     currency: 'USD',
     paymentStatus: 'Refunded',
     source: 'klook'
@@ -77,6 +89,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '3',
     platformOrderNo: 'R744054233342725',
     status: OrderStatus.CANCELED,
+    isRushOrder: false,
     updateTime: getRelativeTime(-25), // Updated yesterday
     cancelTime: getRelativeTime(-25),
     createTime: getRelativeTime(-100),
@@ -89,7 +102,10 @@ export const MOCK_ORDERS: Order[] = [
     returnStore: NAHA_STORE,
     carModel: 'CSAQ5.CDAV.Toyota Aqua',
     customerName: 'Wong Angela',
+    flightNumber: '',
     amount: 119.0,
+    prepaidAmount: 119.0,
+    payAtPickupAmount: 0,
     currency: 'USD',
     paymentStatus: 'Refunded',
     source: 'klook'
@@ -98,6 +114,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '4',
     platformOrderNo: 'R743583524643141',
     status: OrderStatus.CONFIRMED,
+    isRushOrder: true,
     updateTime: getRelativeTime(-0.5), // Just updated
     createTime: getRelativeTime(-5),
     confirmTime: getRelativeTime(-4.5),
@@ -108,7 +125,10 @@ export const MOCK_ORDERS: Order[] = [
     returnStore: NAHA_STORE,
     carModel: 'NOTE3.MCAV.Honda N-BOX',
     customerName: 'Bryan Altaker',
+    flightNumber: 'JL001',
     amount: 91.8,
+    prepaidAmount: 11.8,
+    payAtPickupAmount: 80.0,
     currency: 'USD',
     paymentStatus: 'Pay on Arrival',
     source: 'economybooking'
@@ -117,6 +137,7 @@ export const MOCK_ORDERS: Order[] = [
     id: '5',
     platformOrderNo: 'R743999999999999',
     status: OrderStatus.PICKED_UP,
+    isRushOrder: false,
     updateTime: getRelativeTime(-0.1), // Just picked up
     createTime: getRelativeTime(-10),
     confirmTime: getRelativeTime(-9.9),
@@ -129,7 +150,10 @@ export const MOCK_ORDERS: Order[] = [
     actualCar: 'SERENA21',
     actualCarCurrentStore: HANEDA_STORE, // Actual car is from Haneda (Different!)
     customerName: 'Zhang San',
+    flightNumber: 'MU555',
     amount: 250.0,
+    prepaidAmount: 250.0,
+    payAtPickupAmount: 0,
     currency: 'USD',
     paymentStatus: 'Paid',
     source: 'trip.com'
